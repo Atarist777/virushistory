@@ -3,7 +3,12 @@ This folder, including the text below, is mirrored from the Github
 repository https://github.com/yorgi-gromolski/spintronic-tractor-parts
 
 I do not have more information about these than what is contained in
-the repo and the readmes. - Snorre
+the repo and the readmes. I chose to keep the original documentation
+and folder structure in order to not lose any information.
+
+- Snorre
+
+
 
 
 ----------BEGIN ORIGINAL README-------------------------------
