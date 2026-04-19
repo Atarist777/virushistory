@@ -3,6 +3,7 @@
                                 
 Contact me: snoffle(at)proton.me
 
+helped with collecting some viruses: Vincent Lalo & Draedon
 
 
 <h1>THE VIRUS HISTORY PROJECT<br>A museum of malicious software from bygone days</h1>
