@@ -1,0 +1,56 @@
+%%HP: T(1)A(R)F(.);
+´
+  ´
+  ª
+  ´ DEPTH çLIST 'ST'
+STO 'MARC' RCL 'MARC'
+PURGE PATH HOME 'PH'
+STO 'MARC' STO
+    DO VARS DUP { }
+      IF ==
+      THEN 1
+      ELSE OBJç RAND
+* IP 1 - DROPN DUP
+VTYPE 15
+        IF ==
+        THEN EVAL 0
+        ELSE 8 TVARS
+DUP { }
+          IF ==
+          THEN 1
+          ELSE OBJç 1
+- RAND * DROPN DUP
+RCL çSTR DUP HEAD "´"
+            IF ==
+            THEN DUP
+"MariborC by Kuffs___"
+POS 0
+              IF ==
+              THEN
+"´" SWAP + 'MARC' RCL
++ "'MARC' STO " + 19
+RAND * IP 1 + ç v
+                ´ 1 v
+FOR q 0
+NEXT q DROP v çLIST
+                ª
+çSTR + " DROP " +
+" MARC EVALª" + OBJç
+SWAP STO 1
+              ELSE 1
+              END
+            ELSE 1
+            END
+          END
+        END
+      END
+    UNTIL 1 ==
+    END CLEAR PH
+REVLIST OBJç 1 SWAP
+    FOR q EVAL { MARC
+PH } PURGE
+    NEXT q DROP ST
+OBJç DROP 'ST' PURGE
+  ª 'MARC' STO MARC
+EVAL
+ª
