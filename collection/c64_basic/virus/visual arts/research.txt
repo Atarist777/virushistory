@@ -1,0 +1,17 @@
+It's not actually a virus, or at least is a benign one. It's more a resident and selfreplicating directory display tool.
+The ">" file is the loader for the "<" file, which is the resident code;
+once installed it hooks the load vectors, checking if you load"$",8
+This will display the dir without actually loading it in the basic ram, and while doing so it displays a fixed header
+"visual--arts".
+and the rest of the files on disk, filtering the ">" and "<" files.
+But before doing so, it checks for the track 18, if it sees it's not installed in the disk, it will self replicate by creating the ">" and "<" files and changing the actual disk header to a text that will display only:
+LOAD">",8,1
+and nothing else when the dir is loaded from a clean c64.
+
+Anyone ever faced a "virus" that copied 2 files on a disk namely ">" and "<". It then changed track 18 so that load"$",8 list just returns load">",8,1.
+if you place the cursor on that line and press return you get the directory listing with always the same diskname (something like "visual soft works" or the like, dunno remember exactly). IIRC you can just move the cursor on an entry and press return to load the file. And IIRRC it was also turbo loader.
+
+1.) if you insert another disk into the drive it gets "infected" immediate
+2.) it could also lead to "broken disks". I once inserted Zak McCracken into the drive for testing purpose and it mangled the disk.
+3.) only way to remove the "virus" was to repair the directory with a disk monitor.
+4.) It hides the files ">" and "<" while listing the directory
