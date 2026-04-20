@@ -1,4 +1,0 @@
-B = USR(10) poem
-B = USR(11) version
-B = USR(12) boot count
-B = USR(13) infect
